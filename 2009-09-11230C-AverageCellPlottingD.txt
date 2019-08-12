@@ -1,0 +1,187 @@
+
+% %##########################################################################
+% %########      PLOTS  TRAJECTORY AVERAGED OVER ALL CELLS   ################
+% %##########################################################################
+
+Y=YYY;
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(1)
+set(gcf,'Color',[1,1,1])
+
+subplot(4,2,1);
+plot(T,Y(:,19));
+grid on;
+title(' TNF activity');
+
+subplot(4,2,2);
+plot(T,Y(:,1));
+grid on;
+title(' Active IKKK, (IKKKp)');
+
+subplot(4,2,3);
+plot(T,KNN-Y(:,2)-Y(:,3)-Y(:,4));
+grid on;
+title(' Intermediate Inactive IKK, (IKKii)');
+
+subplot(4,2,4);
+plot(T,Y(:,2));
+grid on;
+title(' Neutral IKK, (IKKn)');
+
+subplot(4,2,5);
+plot(T,Y(:,3));
+grid on;
+title('Active IKK, (IKKa)');
+
+subplot(4,2,6);
+plot(T,Y(:,4));
+grid on;
+title('Inactive IKK, (IKKi)');
+
+subplot(4,2,7);
+plot(T,Y(:,5));
+grid on;
+title('phosphorylated IkBa');
+xlabel('Time in min')
+
+subplot(4,2,8);
+plot(T,Y(:,6));
+grid on;
+title(' phosphorylated IkBa|NFkB');
+xlabel('Time in min')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(2)
+set(gcf,'Color',[1,1,1])
+
+subplot(4,2,1);
+plot(T,Y(:,3));
+grid on;
+title('Active IKK, (IKKa)');
+
+subplot(4,2,2);
+plot(T,Y(:,12)+Y(:,15)+Y(:,11)+Y(:,14)+Y(:,5)+Y(:,6));
+grid on;
+title('  Total IkBa');
+
+subplot(4,2,3)
+plot(T,Y(:,8));
+grid on;
+title('  Free nuclear NF-kB');
+
+subplot(4,2,4);
+plot(T,Y(:,18));
+grid on;
+title('  Activity of IkBa gene, both alleles ');
+
+subplot(4,2,5);
+plot(T,Y(:,17));
+grid on;
+title('  Activity of A20 gene, both alleles'); 
+
+subplot(4,2,6);
+plot(T,Y(:,13));
+grid on;
+title('  IkBa mRNA transcript');
+
+subplot(4,2,7);
+plot(T,Y(:,10));
+grid on;
+title(' A20 mRNA transcript');
+xlabel('Time in min');
+subplot(4,2,8);
+
+plot(T,Y(:,9));
+grid on;
+title('  A20 protein');
+xlabel('Time in min')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(3)
+set(gcf,'Color',[1,1,1])
+
+subplot(3,2,1);
+plot(T,Y(:,14));
+grid on;
+title(' cytoplasmic IkBa|NFkB');
+
+subplot(3,2,2);
+plot(T,Y(:,15));
+grid on;
+title(' nuclear IkBa|NFkB');
+
+subplot(3,2,3);
+plot(T,Y(:,5)+Y(:,6));
+grid on;
+title(' total phosphorylated IkBa');
+
+subplot(3,2,4);
+plot(T,Y(:,3));
+grid on;
+title(' Active IKK, (IKKa)');
+
+subplot(3,2,5);
+plot(T,Y(:,11));
+grid on;
+title('  Free Cytoplasmic IkBa');
+xlabel('Time in min')
+
+subplot(3,2,6);
+plot(T,Y(:,12));
+grid on;
+title('  Free nuclear IkBa');
+xlabel('Time in min')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(4)
+
+set(gcf,'Color',[1,1,1])
+
+subplot(3,1,1);
+plot(T,Y(:,16));
+grid on;
+hold on;
+title('number of active receptors');
+
+subplot(3,1,2);
+plot(T,Y(:,3));
+grid on;
+hold on;
+title('Aktive IKK (IKKa)');
+
+
+subplot(3,1,3);
+plot(T,(Y(:,8) + Y(:,15))/10^5);
+grid on;
+hold on;
+title('NF-kB oscillation amplitude');
+xlabel('Time in min')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(5)
+set(gcf,'Color',[1,1,1])
+
+subplot(2,1,1);
+plot(T,Y(:,20));
+grid on;
+title('Activity of Reporter gene') 
+xlabel('Time in min')
+
+subplot(2,1,2);
+plot(T,Y(:,21));
+grid on;
+title('mRNA of Reporter gene');
+xlabel('Time in min')
+
+
+

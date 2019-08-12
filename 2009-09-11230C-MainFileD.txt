@@ -1,0 +1,322 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   
+%   Main Program for
+%
+%   SIMULATIONS OF NF-kB PATHWAY WITH EXTRINSIC NOISE IN NF-KB AND TNFR1 LEVELS 
+%   S. Tay et al. 2010 Nature 
+%   
+%   Calls: ModelD, ParametersD, AllCellPlotting and AvarageCellPlotting 
+%
+%   After running MainFile you can run 
+%   AllCellPlotting and AvarageCellPlotting
+%   
+%   Saves all data in 'lastsimulation' -can be used to make plot after on
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+clear;              %resets all
+clc;                %clear comand window
+starttime=clock;    %curent time
+rand('twister', sum(1000*clock)); %initializes random numbers generator
+
+
+%#####################################
+%######### Simulation setup ##########
+%#####################################
+
+TNF=0.1;                      % TNF dose 
+
+ANa=2; AN=2; ANR=2;           % ANa=2 - # IKBa alleles, AN=2 - # A20 alleles,  ANR=2 - # Reporter gene alleles
+
+N=10;                         % number of cell to be simulated
+
+
+%###### Simulation time points #######
+% Up to 3 pulses can be simulated (see below - lines 117-226)  
+
+t0=50*60;          % 1 step time when TNF is being introduced into the system (in seconds)
+
+tw1=20*60;          % 2 step length of TNF stimulation
+te1=170*60;        % 3 step length of first break   (White breaks: 3600s, 6000s, 12000s, our break 170*60s)
+
+tw2=20*60;          % 4 step length of second TNF stimulation
+te2=90*60;          % 5 step length of second break
+
+tw3=0;         % 6 step length of third TNF stimulation  
+te3=0;         % 7 step length of third break
+
+    %#################################
+    %###### Initial conditions #######
+    %################################# 
+    
+YYY=0;                         % matrix of average, all variables y0(i)(t) 
+NFKB=0;
+GGa=0; GG=0;  GGT=0; GGR=0;    % status of Ikba,  A20, TNF and reporter genes
+Bb=0;                          % average number of active receptors
+MM=0;                          % total receptor number
+NFF=0; 
+
+
+%   ##############  beginning the mean loop  #################### 
+
+for i=1:N          
+
+i                  %cell nummber
+
+[NF0,NF1,NF2,M0,M1,M2,k4,ka20,AB,kv,q1,q2,c1,c3,c4,c5,k1,k2,k3,a1,a2,a3,c1a,c5a,c6a,i1,i1a,e1a,e2a,dt,tp,KN,KNN,ka,ki,kb,kf,Tdeg,q1r,q2r,q2rr,c1r,c1rr,c3r]=ParametersD;
+
+    
+   %%%% Randomizations  %%%%%%%
+     
+     NF=round(NF0*exp(NF2+randn*NF1))                 %NF-kB level
+     while NF > 10*NF0
+     NF=round(NF0*exp(NF2+randn*NF1))
+     end
+     
+   %NF=NF0;             %Uncomment to run fully deterministic model                      
+   
+   % Lognormal distribution with Median=NF0, Mean=NF0*Exp(NF1^2/2), %
+   % Variance = NF0^2 * (Exp (NF1^2 -1) * Exp(NF1^2)
+   
+
+     M=round(M0*exp(M2+randn*M1))            % number of TNFR1 receptors
+     while M > 10*M0
+     M=round(M0*exp(M2+randn*M1))
+     end
+     
+   %M=M0;               %Uncomment to run fully deterministic model  
+   
+   % Lognormal distribution with Median=M0, Mean=M0*Exp(M1^2/2), %
+   % Variance = M0^2 * (Exp (M1^2 -1) * Exp(M1^2)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% %########################################################################
+% %###############         Initial conditions         #####################
+% %########################################################################
+
+ 
+y0=zeros(1,21);             %Initial conditions set to zero and next: 
+
+y0(14)=NF;                  %NF-kB is given in cytoplasmic complex(IkBa|NFkB) 
+y0(2)=2*10^5;               %initial IKKn, total IKK kept constant  
+y0(11)=0.14*y0(14);         %free cytoplasmic IkBa protein 
+y0(12)=0.06*y0(14);         %free nuclear IkBa protein
+y0(13)=10;                  %IkBa mRNA
+y0(10)=10;                  %10 A20 mRNA
+y0(9)=10000;                %10000 A20 protein
+
+y0(8)=1;
+
+y0(10)=AB*y0(10);                   
+y0(9)=AB*y0(9); 
+
+
+Ga=0;             % status of IkBa promoter
+G=0;              % status of A20 promoter
+GT=0;             % status of TNF promoter
+GR=0;             % status of reporter gene promoter
+B=0;              % number of active receptors
+
+yy0=y0;           % initial conditions y0(i)   
+
+%##########################################################################
+%%%%%%%%%%%%%%%%%%   1 step- no TNF   %%%%%%%%%
+%########################################################################
+
+realtime=0;
+Y=yy0;
+T=zeros(1,1);
+tspan=[0:dt:t0];      
+ 
+[T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+
+yy0=Y0(size(Y0,1),:);     
+yy0(19)=TNF;              %setting TNF ON for the next step
+
+T=[T;T0+realtime];
+Y=[Y;Y0];
+
+%##########################################################################
+%%%%%%%%%%%%%%%%%%%%%%%   2 step- TNF on   %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%########################################################################
+
+realtime=t0;
+tspan=[0:dt:tw1];                   
+  
+[T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+
+yy0=Y0(size(Y0,1),:);    
+yy0(19)=0;              %setting TNF OFF for the next step
+
+T=[T;T0+realtime];
+Y=[Y;Y0];
+
+%##########################################################################
+%%%%%%%%%%%%%%%%%%%%   3 step-TNF washed out     %%%%%%%%%%%%%%%%%%%%%
+%########################################################################
+
+realtime=t0+tw1;
+tspan=[0:dt:te1];                   
+    
+[T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+
+yy0=Y0(size(Y0,1),:);   
+yy0(19)=TNF;              %setting TNF ON for the next step
+
+T=[T;T0+realtime];
+Y=[Y;Y0];
+
+%##########################################################################
+%%%%%%%%%%%%%%%%%%%%%%%   4 step- TNF on 2 time  %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%########################################################################
+
+realtime=t0+tw1+te1;
+tspan=[0:dt:tw2];                   
+  
+[T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+
+yy0=Y0(size(Y0,1),:);    
+yy0(19)=0;              %setting TNF OFF for the next step
+
+T=[T;T0+realtime];
+Y=[Y;Y0];
+
+%##########################################################################
+%%%%%%%%%%%%%%%%%%%%   5 step-TNF washed out  2 time   %%%%%%%%%%%%%%%%%%%%%
+%########################################################################
+
+realtime=t0+tw1+te1+tw2;
+tspan=[0:dt:te2];                   
+    
+[T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+
+yy0=Y0(size(Y0,1),:);  
+yy0(19)=TNF;              %setting TNF ON for the next step
+
+
+T=[T;T0+realtime];
+Y=[Y;Y0];
+
+                     %%% Uncomment to run third pulse %%%%
+                     
+%#######################################################################
+%%%%%%%%%%%%%%%%%%%%%%%   6 step- TNF on 3 time  %%%%%%%%%%%%%%%%%%%%%%
+%########################################################################
+
+% realtime=t0+tw1+te1+tw2+te2;
+% tspan=[0:dt:tw3];                   
+%   
+% [T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+% 
+% yy0=Y0(size(Y0,1),:);    
+% yy0(19)=0;              %setting TNF OFF for the next step
+% 
+% T=[T;T0+realtime];
+% Y=[Y;Y0];
+
+%########################################################################
+%%%%%%%%%%%%%%%%%%%%   7 step-TNF washed out  3 time   %%%%%%%%%%%%%%%%%%%
+%########################################################################
+
+% realtime=t0+tw1+te1+tw2+te2+tw3;
+% tspan=[0:dt:te3];                   
+%     
+% [T0,Y0]=ode23tb(@ModelD,tspan,yy0,[],Ga,G,M,AN,ANa,ANR); 
+% 
+% yy0=Y0(size(Y0,1),:);  
+% yy0(19)=TNF;              %setting TNF ON for the next step
+% 
+% 
+% T=[T;T0+realtime];
+% Y=[Y;Y0];
+
+%##########################################################################
+
+T=(T-t0)/60;
+           
+XXX(i,:,:)=Y(:,:);
+
+
+MM(i)=M;
+NFF(i)=NF;
+
+YYY=YYY+Y;  
+    
+end    
+
+% Data Processing : Counts Cells Responding to First and Second Pulse %
+
+YYY=YYY/N;
+Recetors=sum(MM)/N
+NFaverage=sum(NFF)/N
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+NFKB=XXX(:,:,8)+XXX(:,:,15);
+both=0;
+onlyfirst=0;
+onlysecond=0;
+
+both2=0;
+onlyfirst2=0;
+onlysecond2=0;
+
+for i=1:N
+    s=0;
+    f=0;
+    s2=0;
+    f2=0;
+    aa=NFKB(i,:);
+    c1=size(aa);
+    c=round(c1(2)/2);
+    a1=aa(i:c);
+    a2=aa(c:2*c-1);
+    
+if max(a1)>NF0/10  
+    f=1;
+end    
+if max(a1)>NF0/5  
+    f2=1;
+end    
+if max(a2)>NF0/10
+    s=1;
+end  
+if max(a2)>NF0/5
+    s2=1;
+end 
+    both=both+f*s;
+    onlyfirst=onlyfirst+f-f*s;
+    onlysecond=onlysecond+s-f*s;
+    
+    both2=both2+f2*s2;
+    onlyfirst2=onlyfirst2+f2-f2*s2;
+    onlysecond2=onlysecond2+s2-f2*s2;
+end
+
+%Gives the number of cells responding to both, only first, and only second pulse
+
+Threshold=0.1  
+
+both
+onlyfirst
+onlysecond
+any=both+onlyfirst+onlysecond
+
+% Threshold 0.2 was used for the paper %
+
+Threshold=0.2 
+
+both2
+onlyfirst2
+onlysecond2
+any2=both2+onlyfirst2+onlysecond2
+
+%%%%%%%%%%%%%%%%%%%%
+save lastsimulation    % Saves all data 
+
+simulation_time=etime(clock,starttime) % simulation time in seconds
+
+AllCellPlottingD        %calls AllCellPlottingD to make all plots
+
+%AverageCellPlottingD   %calls AverageCellPlottingD to plot the average trajectory
