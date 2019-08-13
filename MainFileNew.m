@@ -51,17 +51,17 @@ tw3=5*60;
 te3=100*60;
 
 %% Numerical Simulation Parameters
-tt=1000;  % time interval for ODEs solving 
+tt=1000;  % time interval for ODE numerical solving (not increment)
                      
 YYY=0;  % matrix of average, all variables y0(i)(t) 
-NFKB=0; % total nuclear NF-kB 
+% NFKB=0; % total nuclear NF-kB 
 GGa=0;  % status of Ikba gene
 GG=0;   % status of A20 gene
 GGT=0;  % status of TNF 
 GGR=0;  % status of reporter genes
 Bb=0;   % number of active receptors
-MM=0;
-NFF=0;
+MM=0;   % TNFR1 quantity
+NFF=0;  % NF-kB quantity
 
 %% Start
 for i=1:N % Simulate each cell (i)
@@ -76,7 +76,7 @@ c1r,c1rr,c3r]=Parameters;
 %% Randomize Initial Total TNF Receptors And NF-kB Conditions
 NF=round(NF0*exp(NF2+randn*NF1))                %NF-kB level
 while NF > 10*NF0
-NF=round(NF0*exp(NF2+randn*NF1))
+NF=round(NF0*exp(NF2+randn*NF1)) % keeps level within order of magnitude
 end
      
 %NF=NF0;     %uncomment to remove extrinsic noise 
@@ -87,7 +87,7 @@ end
 
 M=round(M0*exp(M2+randn*M1))            % number of TNFR1 receptors
 while M > 10*M0
-M=round(M0*exp(M2+randn*M1))
+M=round(M0*exp(M2+randn*M1)) % keeps level within order of magnitude
 end
      
 %M=M0;         %uncomment to remove extrinsic noise  
@@ -100,13 +100,13 @@ y0=zeros(1,19);     %initial conditions set to zero and next:
 
 y0(14)=NF;          %NF-kB is given in cytoplasmic complex(IkBa|NFkB), standard = 10^5
 y0(2)=2*10^5;       %initial IKKn, total IKK kept constant  
-y0(11)=0.14*y0(14); %free cytoplasmic IkBa protein 
-y0(12)=0.06*y0(14); %free nuclear IkBa protein
+y0(11)=0.14*y0(14); %free cytoplasmic IkBa protein (0.14 fraction not bound in complex)
+y0(12)=0.06*y0(14); %free nuclear IkBa protein (0.06 fraction not bound in complex)
 y0(13)=10;          %IkBa mRNA
 y0(10)=10;          %10 A20 mRNA
 y0(9)=10000;        %10000 A20 protein
    
-y0(10)=AB*y0(10);                   
+y0(10)=AB*y0(10); % On/Off switch for knockout
 y0(9)=AB*y0(9); 
 
 Ga=0;               % initial status of IkBa promoter
@@ -119,32 +119,35 @@ yy0=y0;             % initial conditions y0(i)
 %% Randomization of Remaining Initial Conditions
 realtime=0;                     %simulated time   
 phase=round(rand*t000/dt)*dt;   %random initial time (dt -simulation time step -10s)  
-tspan=[0:dt:tt];                %time for which the solution is derived to find the switching time, tt=1h
+tspan=0:dt:tt;                %time array for each time point in simulation
+
+% Code above sets time limit in increments of dt. This keeps code from breaking.
 
 while (realtime<phase)
-    [T0,Y0]=ode23tb(@ModelNew,tspan,yy0,[],Ga,G,GR,B,M); 
+    [T0,Y0]=ode23tb(@ModelNew,tspan,yy0,[],Ga,G,GR,B,M); % Numerical simulaion
+% [] needed in syntax for segregation of numerical solver variables and 
+% additional model variables.
     Yact=Y0(:,8);               %amount of NF-kBn  
     Yin=Y0(:,12);               %amount of IkBan 
     TR=Y0(:,16);                %TNF level  
     Gax=Ga;Gx=G;GRx=GR;Bx=B;
-    [mk,Ga,G,GR,B]=StatusChangeNew(AN,ANa,ANR,TR,Gax,Gx,GRx,Bx,Yact,Yin,M) ;  %function determining the change of gene status, calls statuschange
+    [mk,Ga,G,GR,B]=StatusChangeNew(AN,ANa,ANR,TR,Gax,Gx,GRx,Bx,Yact,Yin,M);
+    %function determining the change of gene status, calls statuschange
 
     tc=T0(mk);                  %time when the status changes 
     yy0=Y0(mk,:);               %transfer of initial conditions to the next iteration  
     realtime=realtime+tc;
-end;
+end
 
 if (realtime>phase)
     nn=(realtime-phase)/dt;
     yy0=Y0(mk-nn,:);
     Ga=Gax;G=Gx;GR=GRx;B=Bx;
-end;                            %status before the last change it occured outside of the time interval
+end %status before the last change it occured outside of the time interval
 
 clear Yact Yin Y0 T0 nn mk phase tc;
 
-%####################################################
-%###### 0 step - waiting for "equilibrium"    #######
-%####################################################
+% Wait for system steady state.
 
 realtime=0;
 
@@ -154,17 +157,55 @@ while (realtime<t00)
     Yin=Y0(:,12);               %amount of IkBan  
     TR=Y0(:,16);                %TNF level  
     Gax=Ga;Gx=G;GRx=GR;Bx=B;
-    [mk,Ga,G,GR,B]=StatusChangeNew(AN,ANa,ANR,TR,Gax,Gx,GRx,Bx,Yact,Yin,M); %function determining the change of gene status, calls statuschange
-
+    [mk,Ga,G,GR,B]=StatusChangeNew(AN,ANa,ANR,TR,Gax,Gx,GRx,Bx,Yact,Yin,M);
+    %function determining the change of gene status, calls statuschange
     tc=T0(mk);                  %time when the status changes 
     yy0=Y0(mk,:);               %transfer of initial conditions to the next iteration  
     realtime=realtime+tc;
-end;
+end
 
 if (realtime>t00)
     nn=(realtime-t00)/dt;
     yy0=Y0(mk-nn,:);
     Ga=Gax;G=Gx;GR=GRx;B=Bx;
-end;                            %status before the last change it occured ouside of the time interval
+end %status before the last change it occured ouside of the time interval
 
 clear Yact Yin Y0 T0 nn mk tc; 
+
+%% Let Cell Wait
+realtime=0;
+ga=[Ga];g=[G];gR=[GR];                  %saves activity of IkBa A20 reporter genes 
+bb=[B];                                 %saves number of active receptors
+Y=yy0;                                  %variables where single cell run is stored
+T=zeros(1,1);
+
+while (realtime<t0)
+    [T0,Y0]=ode23tb(@ModelNew,tspan,yy0,[],Ga,G,GR,B,M); 
+    Yact=Y0(:,8);               %amount of NF-kBn  
+    Yin=Y0(:,12);               %amount of IkBan  
+    TR=Y0(:,16);                %TNF level  
+    Gax=Ga;Gx=G;GRx=GR;Bx=B;
+    [mk,Ga,G,GR,B]=StatusChangeNew(AN,ANa,ANR,TR,Gax,Gx,GRx,Bx,Yact,Yin,M); %function determining the change of gene status, call statuschange
+    tc=T0(mk);                  %time when the status changes 
+    yy0=Y0(mk,:);               %transfer of initial conditions to the next iteration
+    Y=[Y;Y0(2:mk,:)];           %rows from 2 do mk, all columns
+    T=[T;T0(2:mk)+realtime];          
+    ga=[ga;Gax*ones(mk-1,1)];
+    g=[g;Gx*ones(mk-1,1)];
+    gR=[gR;GRx*ones(mk-1,1)];
+    bb=[bb;Bx*ones(mk-1,1)];
+    realtime=realtime+tc;
+end;
+
+
+    nn=(realtime-t0)/dt;
+    x=size(Y);
+    Y=Y(1:(x(1)-nn),:);
+    T=T(1:(x(1)-nn));
+
+    Y0(mk-nn,16)=TNF;        %setting TNF ON for the next step
+
+    yy0=Y0(mk-nn,:);
+    x1=length(ga);
+    ga=ga(1:x1-nn);g=g(1:x1-nn);gR=gR(1:x1-nn);bb=bb(1:x1-nn);
+    Ga=Gax;G=Gx;GR=GRx;B=Bx;
