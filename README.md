@@ -5,3 +5,6 @@ digital activation and analogue information processing' (2010). Files with
 indicates an intermediate document for use in streamlining other related 
 documents. The new code is well commented, preamble described, and capable 
 of functioning without other workspaces.
+
+# Editors:
+Jonathan Myers
